@@ -551,8 +551,11 @@ class YandexMetrika
                     'Authorization' => 'OAuth '.$this->token,
                 ],
             ]);
+            
+            $method = !empty($urlParams["method"]) ? "/" . $urlParams["method"] : "";
+            unset($urlParams["method"]);
 
-            $response = $client->request('GET', $this->url,
+            $response = $client->request('GET', $this->url . $method,
                 ['query' => $urlParams]);
 
             $result = json_decode($response->getBody(), true);
