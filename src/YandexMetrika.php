@@ -529,46 +529,31 @@ class YandexMetrika
     }
 
     /**
-     * GET запрос данных и кэширование
+     * GET запрос данных БЕЗ кэширования
      *
      * @param $urlParams
      * @param $name
      *
      * @return mixed|null
+     * @throw ClientException     
      */
     protected function request($urlParams, $name)
     {
-        $cacheName = $this->counter_id.'_'.$name;
+        $client = new GuzzleClient([
+            'headers' => [
+                'Content-Type'  => 'application/x-yametrika+json',
+                'Authorization' => 'OAuth '.$this->token,
+            ],
+        ]);
 
-        if (Cache::has($cacheName)) {
-            return Cache::get($cacheName);
-        }
+        $method = !empty($urlParams["method"]) ? "/" . $urlParams["method"] : "";
+        unset($urlParams["method"]);
 
-        try {
-            $client = new GuzzleClient([
-                'headers' => [
-                    'Content-Type'  => 'application/x-yametrika+json',
-                    'Authorization' => 'OAuth '.$this->token,
-                ],
-            ]);
-            
-            $method = !empty($urlParams["method"]) ? "/" . $urlParams["method"] : "";
-            unset($urlParams["method"]);
+        $response = $client->request('GET', $this->url . $method,
+            ['query' => $urlParams]);
 
-            $response = $client->request('GET', $this->url . $method,
-                ['query' => $urlParams]);
+        $result = json_decode($response->getBody(), true);
 
-            $result = json_decode($response->getBody(), true);
-
-        } catch (ClientException $e) {
-            Log::error('Yandex Metrika: '.$e->getMessage());
-
-            $result = null;
-        }
-
-        if ($result) {
-            Cache::put($cacheName, $result, $this->cache);
-        }
 
         return $result;
     }
